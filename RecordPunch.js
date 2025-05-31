@@ -3,10 +3,10 @@
 
 [rewrite_local]
 # 本地调试版本
-^https?://w3m\.huawei\.com/mcloud/mag/ProxyForText/.*?/punchCard url script-response-body http://192.168.1.3:8080/RecordPunch.js
+# ^https?://w3m\.huawei\.com/mcloud/mag/ProxyForText/.*?/punchCard url script-response-body http://192.168.1.3:8080/RecordPunch.js
 
 # 在线版本
-# https?://w3m\.huawei\.com/mcloud/mag/ProxyForText/.*?/punchCard url script-response-body https://raw.githubusercontent.com/Mingtha/MingJs/refs/heads/main/RecordPunch.js
+https?://w3m\.huawei\.com/mcloud/mag/ProxyForText/.*?/punchCard url script-response-body https://raw.githubusercontent.com/Mingtha/MingJs/refs/heads/main/RecordPunch.js
 
 [mitm]
 hostname = w3m.huawei.com
