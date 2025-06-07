@@ -1,6 +1,7 @@
 name: daily-update-rules
 
 on:
+    push:
     schedule:
         - cron: '0 2 * * *'
     workflow_dispatch: # 允许手动触发
