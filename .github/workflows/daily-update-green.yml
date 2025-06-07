@@ -1,4 +1,4 @@
-name: daily-update-green
+name: daily-update-rules
 
 on:
     schedule:
@@ -8,127 +8,37 @@ on:
 jobs:
     update-green-rules:
         runs-on: ubuntu-latest
-
         steps:
-            - name: Checkout代码
+            - name: Checkout
               uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v4
               with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  python-version: '3.x'
 
-            - name: 设置Node.js环境
-              uses: actions/setup-node@v4
-              with:
-                  node-version: '20'
-
-            - name: 获取并处理Green规则
+            - name: Install dependencies
               run: |
-                  # 获取源文件内容
-                  echo "正在获取源文件..."
-                  curl -s "https://raw.githubusercontent.com/QCEnjoyLL/Mihomo-Scripts/506f3ade6e5260606daba06ad8e3dc1dd784ff6d/green.yaml" -o green_source.yaml
+                  pip install pyyaml requests
 
-                  # 检查文件是否成功下载
-                  if [ ! -f "green_source.yaml" ] || [ ! -s "green_source.yaml" ]; then
-                    echo "错误：无法下载源文件或文件为空"
-                    exit 1
-                  fi
-
-                  echo "文件下载成功，开始处理..."
-
-                  # 创建处理脚本
-                  cat > process_green.js << 'EOF'
-                  const fs = require('fs');
-                  const yaml = require('js-yaml');
-
-                  try {
-                    // 读取源文件
-                    const sourceContent = fs.readFileSync('green_source.yaml', 'utf8');
-                    
-                    // 解析YAML
-                    const sourceData = yaml.load(sourceContent);
-                    
-                    // 提取payload中的规则
-                    let rules = [];
-                    if (sourceData && sourceData.payload) {
-                      rules = sourceData.payload;
-                    } else {
-                      console.error('源文件格式不正确，找不到payload字段');
-                      process.exit(1);
-                    }
-                    
-                    console.log(`提取到 ${rules.length} 条规则`);
-                    
-                    // 生成GreenClash.yaml格式
-                    const clashData = {
-                      payload: rules
-                    };
-                    const clashYaml = yaml.dump(clashData, {
-                      lineWidth: -1,
-                      noRefs: true,
-                      quotingType: '"'
-                    });
-                    
-                    // 生成GreenQX.list格式（去掉开头的连字符和空格）
-                    const qxList = rules.map(rule => rule.trim().replace(/^-\s*/, '')).join('\n');
-                    
-                    // 写入文件
-                    fs.writeFileSync('rules/GreenClash.yaml', clashYaml);
-                    fs.writeFileSync('rules/GreenQX.list', qxList);
-                    
-                    console.log('文件处理完成');
-                    console.log('GreenClash.yaml:', clashYaml.split('\n').length, '行');
-                    console.log('GreenQX.list:', qxList.split('\n').length, '行');
-                    
-                  } catch (error) {
-                    console.error('处理文件时发生错误:', error);
-                    process.exit(1);
-                  }
-                  EOF
-
-                  # 安装依赖并运行处理脚本
-                  npm install js-yaml
-                  node process_green.js
-
-                  # 清理临时文件
-                  rm -f green_source.yaml process_green.js
-
-            - name: 检查是否有变更
-              id: check_changes
+            - name: Update rules
               run: |
-                  if git diff --quiet; then
-                    echo "changes=false" >> $GITHUB_OUTPUT
-                    echo "没有检测到变更"
+                  python rules/Update.py
+
+            - name: Check for changes
+              id: verify-changed-files
+              run: |
+                  if [ -n "$(git status --porcelain)" ]; then
+                      echo "changed=true" >> $GITHUB_OUTPUT
                   else
-                    echo "changes=true" >> $GITHUB_OUTPUT
-                    echo "检测到文件变更"
+                      echo "changed=false" >> $GITHUB_OUTPUT
                   fi
 
-            - name: 提交变更
-              if: steps.check_changes.outputs.changes == 'true'
+            - name: Commit and push changes
+              if: steps.verify-changed-files.outputs.changed == 'true'
               run: |
                   git config --local user.email "action@github.com"
                   git config --local user.name "GitHub Action"
-
-                  # 添加变更的文件
                   git add rules/GreenClash.yaml rules/GreenQX.list
-
-                  # 获取当前时间
-                  TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S UTC')
-
-                  # 提交变更
-                  git commit -m "🤖 自动更新Green规则 - $TIMESTAMP"
-
-                  # 推送到远程仓库
+                  git commit -m "🔄 自动更新绿色规则列表 - $(date '+%Y-%m-%d %H:%M:%S')"
                   git push
-
-                  echo "✅ 规则更新完成并已推送到仓库"
-
-            - name: 输出结果
-              run: |
-                  if [ "${{ steps.check_changes.outputs.changes }}" == "true" ]; then
-                    echo "✅ Green规则已成功更新"
-                    echo "📊 更新的文件："
-                    echo "  - rules/GreenClash.yaml"
-                    echo "  - rules/GreenQX.list"
-                  else
-                    echo "ℹ️ 规则无变更，跳过更新"
-                  fi
