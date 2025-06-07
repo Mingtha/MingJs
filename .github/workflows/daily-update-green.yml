@@ -43,5 +43,5 @@ jobs:
                   git config --local user.email "action@github.com"
                   git config --local user.name "GitHub Action"
                   git add rules/GreenClash.yaml rules/GreenQX.list
-                  git commit -m "🔄 自动更新绿色规则列表 - $(date '+%Y-%m-%d %H:%M:%S')"
+                  git commit -m "🔄 auto update rules - $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
                   git push

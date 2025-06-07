@@ -1,6 +1,0 @@
-{
-    "code-runner.executorMap": {
-        // 在quantumultX的http服务器上运行脚本
-        "javascript": "cls && cd $dir && $fileContent = Get-Content -Path '$fileName' -Raw -Encoding UTF8 && $jsonObject = @{script = $fileContent.Trim()} && $body = $jsonObject | ConvertTo-Json -Compress  && $response = Invoke-RestMethod -Uri 'http://192.168.1.2:9999/api/runScript' -Method POST -Body $body -ContentType 'application/json; charset=utf-8' && $response | Format-List "
-    }
-}
